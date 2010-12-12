@@ -8,7 +8,7 @@ project(flann)
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 
 include(${PROJECT_SOURCE_DIR}/cmake/flann_utils.cmake)
-set(FLANN_VERSION 1.6.0)
+set(FLANN_VERSION 1.6.1)
 DISSECT_VERSION()
 GET_OS_INFO()
 
@@ -18,7 +18,7 @@ CONFIGURE_FILE ("${PROJECT_SOURCE_DIR}/cmake/uninstall_target.cmake.in"
 ADD_CUSTOM_TARGET (uninstall "${CMAKE_COMMAND}" -P
     "${PROJECT_BINARY_DIR}/uninstall_target.cmake")
 
-if (NOT CMAKE_INSTALL_PREFIX)
+if (NOT DEFINED CMAKE_INSTALL_PREFIX)
     set(CMAKE_INSTALL_PREFIX /usr/local)
 endif()
 
@@ -28,7 +28,7 @@ endif()
 #  RelWithDebInfo : w/ debug symbols, w/ optimization
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
 
-if (NOT CMAKE_BUILD_TYPE)
+if (NOT DEFINED CMAKE_BUILD_TYPE)
     #set(CMAKE_BUILD_TYPE Release)
     set(CMAKE_BUILD_TYPE RelWithDebInfo)
     #set(CMAKE_BUILD_TYPE Debug)
@@ -44,6 +44,28 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 # set output path for tests
 set(TEST_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/test)
+
+
+if (NOT DEFINED BUILD_C_BINDINGS)
+    set(BUILD_C_BINDINGS true)
+endif()
+
+if (NOT DEFINED BUILD_PYTHON_BINDINGS)
+    set(BUILD_PYTHON_BINDINGS true)
+endif()
+
+if (NOT DEFINED BUILD_MATLAB_BINDINGS)
+    set(BUILD_MATLAB_BINDINGS true)
+endif()
+
+if (NOT BUILD_C_BINDINGS)
+    set(BUILD_PYTHON_BINDINGS false)
+    set(BUILD_MATLAB_BINDINGS false)
+endif()
+
+message("Building C bindings: ${BUILD_C_BINDINGS}")
+message("Building python bindings: ${BUILD_PYTHON_BINDINGS}")
+message("Building matlab bindings: ${BUILD_MATLAB_BINDINGS}")
 
 
 message("USE_MPI: ${USE_MPI}")
