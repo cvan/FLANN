@@ -43,6 +43,7 @@
 #include "flann/nn/index_testing.h"
 #include "flann/util/object_factory.h"
 #include "flann/util/saving.h"
+#include "flann/util/pair_iterator.hpp"
 
 #include "flann/algorithms/all_indices.h"
 
@@ -85,6 +86,7 @@ struct SavedIndexParams : public IndexParams {
 	}
 };
 
+
 template<typename Distance>
 class Index {
 	typedef typename Distance::ElementType ElementType;
@@ -117,7 +119,7 @@ public:
 
 
 template<typename Distance>
-NNIndex<Distance>* load_saved_index(const Matrix<typename Distance::ElementType>& dataset, const string& filename, Distance distance)
+NNIndex<Distance>* load_saved_index(const Matrix<typename Distance::ElementType>& dataset, const std::string& filename, Distance distance)
 {
 	typedef typename Distance::ElementType ElementType;
 
@@ -184,18 +186,10 @@ void Index<Distance>::knnSearch(const Matrix<ElementType>& queries, Matrix<int>&
 	assert(int(indices.cols)>=knn);
 	assert(int(dists.cols)>=knn);
 
-    KNNResultSet resultSet(knn);
-
+    KNNResultSet<DistanceType> resultSet(knn);
     for (size_t i = 0; i < queries.rows; i++) {
-        ElementType* target = queries[i];
-        resultSet.init();
-
-        nnIndex->findNeighbors(resultSet, target, searchParams);
-
-        int* neighbors = resultSet.getNeighbors();
-        float* distances = resultSet.getDistances();
-        memcpy(indices[i], neighbors, knn*sizeof(int));
-        memcpy(dists[i], distances, knn*sizeof(float));
+        resultSet.init(indices[i], dists[i]);
+        nnIndex->findNeighbors(resultSet, queries[i], searchParams);
     }
 }
 
@@ -210,29 +204,31 @@ int Index<Distance>::radiusSearch(const Matrix<ElementType>& query, Matrix<int>&
 		return -1;
 	}
 	assert(query.cols==nnIndex->veclen());
+	assert(indices.cols==dists.cols);
 
-	RadiusResultSet resultSet(radius);
-	resultSet.init();
-	nnIndex->findNeighbors(resultSet, query[0] ,searchParams);
-
-	// TODO: optimise here
-	int* neighbors = resultSet.getNeighbors();
-	float* distances = resultSet.getDistances();
-	size_t count_nn = min(resultSet.size(), indices.cols);
-
-	assert (dists.cols>=count_nn);
-
-	for (size_t i=0;i<count_nn;++i) {
-		indices[0][i] = neighbors[i];
-		dists[0][i] = distances[i];
+	int n = 0;
+	int* indices_ptr = NULL;
+	DistanceType* dists_ptr = NULL;
+	if (indices.cols>0) {
+		n = indices.cols;
+		indices_ptr = indices[0];
+		dists_ptr = dists[0];
+	}
+	RadiusResultSet<DistanceType> result_set(radius, indices_ptr, dists_ptr, n);
+	nnIndex->findNeighbors(result_set, query[0], searchParams);
+	size_t cnt = result_set.size();
+	if (searchParams.sorted) {
+		std::sort(make_pair_iterator(dists_ptr, indices_ptr),
+				make_pair_iterator(dists_ptr+cnt, indices_ptr+cnt),
+				pair_iterator_compare<DistanceType*, int*>());
 	}
 
-	return count_nn;
+	return cnt;
 }
 
 
 template<typename Distance>
-void Index<Distance>::save(string filename)
+void Index<Distance>::save(std::string filename)
 {
 	FILE* fout = fopen(filename.c_str(), "wb");
 	if (fout==NULL) {

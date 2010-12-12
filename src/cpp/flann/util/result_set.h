@@ -36,8 +36,6 @@
 #include <limits>
 #include <vector>
 
-using namespace std;
-
 
 namespace flann
 {
@@ -62,63 +60,40 @@ struct BranchStruct {
 };
 
 
+template <typename DistanceType>
 class ResultSet
 {
 public:
 	virtual ~ResultSet() {};
 
-	virtual void init() = 0;
-
-	virtual int* getNeighbors() = 0;
-
-	virtual float* getDistances() = 0;
-
-	virtual size_t size() const = 0;
-
 	virtual bool full() const = 0;
 
-	virtual void addPoint(float dist, int index) = 0;
+	virtual void addPoint(DistanceType dist, int index) = 0;
 
-	virtual float worstDist() const = 0;
+	virtual DistanceType worstDist() const = 0;
 
 };
 
-class KNNResultSet : public ResultSet
+template <typename DistanceType>
+class KNNResultSet : public ResultSet<DistanceType>
 {
 	int* indices;
-	float* dists;
+	DistanceType* dists;
     int capacity;
 	int count;
 
 public:
-	KNNResultSet(int capacity_) : capacity(capacity_)
+	KNNResultSet(int capacity_) : capacity(capacity_), count(0)
 	{
-        indices = new int[capacity_+1];
-        dists = new float[capacity_+1];
-        count = 0;
 	}
 
-	~KNNResultSet()
+	void init(int* indices_, DistanceType* dists_)
 	{
-		delete[] indices;
-		delete[] dists;
-	}
-
-	void init()
-	{
+		indices = indices_;
+		dists = dists_;
 		count = 0;
-		dists[capacity-1] = (numeric_limits<float>::max) ();
+		dists[capacity-1] = (std::numeric_limits<DistanceType>::max) ();
 	}
-
-	int* getNeighbors()
-	{
-		return indices;
-	}
-
-    float* getDistances()
-    {
-        return dists;
-    }
 
     size_t size() const
     {
@@ -131,46 +106,27 @@ public:
 	}
 
 
-	void addPoint(float dist, int index)
+	void addPoint(DistanceType dist, int index)
 	{
-//		for (int i=0;i<count;++i) {
-//			if (indices[i]==index) return false;
-//		}
 		int i;
 		for (i=count; i>0;--i) {
-//			if ( (dists[i-1]>dist) || (dist==dists[i-1] && indices[i-1]>index) ) {
+			//			if ( (dists[i-1]>dist) || (dist==dists[i-1] && indices[i-1]>index) ) {
 			if (dists[i-1]>dist) {
-				dists[i] = dists[i-1];
-				indices[i] = indices[i-1];
+				if (i<capacity) {
+					dists[i] = dists[i-1];
+					indices[i] = indices[i-1];
+				}
 			}
 			else break;
 		}
-		dists[i] = dist;
-		indices[i] = index;
+		if (i<capacity) {
+			dists[i] = dist;
+			indices[i] = index;
+		}
 		if (count<capacity) count++;
-
-//		if (count<capacity) {
-//			indices[count] = index;
-//			dists[count] = dist;
-//			++count;
-//		}
-////		else if (dist < dists[count-1] || (dist == dists[count-1] && index < indices[count-1])) {
-//         else if (dist < dists[count-1]) {
-//			indices[count-1] = index;
-//			dists[count-1] = dist;
-//		}
-//
-//		register int i = count-1;
-//		// bubble up
-////		while (i>=1 && (dists[i]<dists[i-1] || (dists[i]==dists[i-1] && indices[i]<indices[i-1]) ) ) {
-//         while (i>=1 && (dists[i]<dists[i-1]) ) {
-//			swap(indices[i],indices[i-1]);
-//			swap(dists[i],dists[i-1]);
-//			i--;
-//		}
 	}
 
-	float worstDist() const
+	DistanceType worstDist() const
 	{
 		return dists[capacity-1];
 	}
@@ -180,88 +136,34 @@ public:
 /**
  * A result-set class used when performing a radius based search.
  */
-class RadiusResultSet : public ResultSet
+template <typename DistanceType>
+class RadiusResultSet : public ResultSet<DistanceType>
 {
-	struct Item {
-		int index;
-		float dist;
-
-		bool operator<(Item rhs) {
-			return dist<rhs.dist;
-		}
-	};
-
-	vector<Item> items;
-	float radius;
-
-	bool sorted;
+	DistanceType radius;
 	int* indices;
-	float* dists;
+	DistanceType* dists;
+	size_t capacity;
 	size_t count;
 
-private:
-	void resize_vecs()
-	{
-		if (items.size()>count) {
-			if (indices!=NULL) delete[] indices;
-			if (dists!=NULL) delete[] dists;
-			count = items.size();
-			indices = new int[count];
-			dists = new float[count];
-		}
-	}
-
 public:
-	RadiusResultSet(float radius_) :
-		radius(radius_), indices(NULL), dists(NULL)
+	RadiusResultSet(DistanceType radius_, int* indices_, DistanceType* dists_, int capacity_) :
+		radius(radius_), indices(indices_), dists(dists_), capacity(capacity_)
 	{
-		sorted = false;
-		items.reserve(16);
-		count = 0;
+		init();
 	}
 
 	~RadiusResultSet()
 	{
-		if (indices!=NULL) delete[] indices;
-		if (dists!=NULL) delete[] dists;
 	}
 
 	void init()
 	{
-		sorted = false;
-		items.clear();
 		count = 0;
 	}
 
-	int* getNeighbors()
-	{
-		if (!sorted) {
-			sorted = true;
-			sort_heap(items.begin(), items.end());
-		}
-		resize_vecs();
-		for (size_t i=0;i<items.size();++i) {
-			indices[i] = items[i].index;
-		}
-		return indices;
-	}
-
-    float* getDistances()
-    {
-		if (!sorted) {
-			sorted = true;
-			sort_heap(items.begin(), items.end());
-		}
-		resize_vecs();
-		for (size_t i=0;i<items.size();++i) {
-			dists[i] = items[i].dist;
-		}
-        return dists;
-    }
-
     size_t size() const
     {
-    	return items.size();
+    	return count;
     }
 
 	bool full() const
@@ -269,23 +171,24 @@ public:
 		return true;
 	}
 
-	void addPoint(float dist, int index)
+	void addPoint(DistanceType dist, int index)
 	{
-		Item it;
-		it.index = index;
-		it.dist = dist;
-		if (it.dist<=radius) {
-			items.push_back(it);
-			push_heap(items.begin(), items.end());
+		if (dist<radius) {
+			if (capacity>0 && count < capacity) {
+				dists[count] = dist;
+				indices[count] = index;
+			}
+			count++;
 		}
 	}
 
-	float worstDist() const
+	DistanceType worstDist() const
 	{
 		return radius;
 	}
 
 };
+
 
 }
 

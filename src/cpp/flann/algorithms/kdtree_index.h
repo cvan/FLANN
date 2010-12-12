@@ -45,8 +45,6 @@
 #include "flann/util/random.h"
 #include "flann/util/saving.h"
 
-using namespace std;
-
 
 namespace flann
 {
@@ -225,7 +223,7 @@ public:
 	{
 		for (int j = vec_size; j > 0; --j) {
 			int rnd = rand_int(j);
-			swap(vec[j-1], vec[rnd]);
+			std::swap(vec[j-1], vec[rnd]);
 		}
 	}
 
@@ -298,12 +296,12 @@ public:
      *     vec = the vector for which to search the nearest neighbors
      *     maxCheck = the maximum number of restarts (in a best-bin-first manner)
      */
-    void findNeighbors(ResultSet& result, const ElementType* vec, const SearchParams& searchParams)
+    void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
     {
         int maxChecks = searchParams.checks;
         float epsError = 1+searchParams.eps;
 
-        if (maxChecks<0) {
+        if (maxChecks==CHECKS_UNLIMITED) {
             getExactNeighbors(result, vec, epsError);
         } else {
             getNeighbors(result, vec, maxChecks, epsError);
@@ -390,7 +388,7 @@ private:
 		/* Compute mean values.  Only the first SAMPLE_MEAN values need to be
 			sampled to get a good estimate.
 		*/
-		int cnt = min((int)SAMPLE_MEAN+1, count);
+		int cnt = std::min((int)SAMPLE_MEAN+1, count);
 		for (int j = 0; j < cnt; ++j) {
 			ElementType* v = dataset[ind[j]];
             for (size_t k=0; k<veclen_; ++k) {
@@ -447,7 +445,7 @@ private:
 				/* Bubble end value down to right location by repeated swapping. */
 				int j = num - 1;
 				while (j > 0  &&  v[topind[j]] > v[topind[j-1]]) {
-					swap(topind[j], topind[j-1]);
+					std::swap(topind[j], topind[j-1]);
 					--j;
 				}
 			}
@@ -476,7 +474,7 @@ private:
 			while (left<=right && dataset[ind[left]][cutfeat]<cutval) ++left;
 			while (left<=right && dataset[ind[right]][cutfeat]>=cutval) --right;
 			if (left>right) break;
-			swap(ind[left], ind[right]); ++left; --right;
+			std::swap(ind[left], ind[right]); ++left; --right;
 		}
 		/* If either list is empty, it means that all remaining features
 		 * are identical. Split in the middle to maintain a balanced tree.
@@ -487,7 +485,7 @@ private:
 			while (left<=right && dataset[ind[left]][cutfeat]<=cutval) ++left;
 			while (left<=right && dataset[ind[right]][cutfeat]>cutval) --right;
 			if (left>right) break;
-			swap(ind[left], ind[right]); ++left; --right;
+			std::swap(ind[left], ind[right]); ++left; --right;
 		}
 		lim2 = left;
 	}
@@ -496,7 +494,7 @@ private:
 	 * Performs an exact nearest neighbor search. The exact search performs a full
 	 * traversal of the tree.
 	 */
-	void getExactNeighbors(ResultSet& result, const ElementType* vec, float epsError)
+	void getExactNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, float epsError)
 	{
 //		checkID -= 1;  /* Set a different unique ID for each search. */
 
@@ -514,14 +512,14 @@ private:
 	 * because the tree traversal is abandoned after a given number of descends in
 	 * the tree.
 	 */
-	void getNeighbors(ResultSet& result, const ElementType* vec, int maxCheck, float epsError)
+	void getNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, int maxCheck, float epsError)
 	{
 		int i;
 		BranchSt branch;
 
 		int checkCount = 0;
 		Heap<BranchSt>* heap = new Heap<BranchSt>(size_);
-		vector<bool> checked(size_,false);
+		std::vector<bool> checked(size_,false);
 
 		/* Search once through each tree down to root. */
 		for (i = 0; i < numTrees; ++i) {
@@ -544,8 +542,8 @@ private:
 	 *  higher levels, all exemplars below this level must have a distance of
 	 *  at least "mindistsq".
 	*/
-	void searchLevel(ResultSet& result_set, const ElementType* vec, NodePtr node, float mindistsq, int& checkCount, int maxCheck,
-			float epsError, Heap<BranchSt>* heap, vector<bool>& checked)
+	void searchLevel(ResultSet<DistanceType>& result_set, const ElementType* vec, NodePtr node, float mindistsq, int& checkCount, int maxCheck,
+			float epsError, Heap<BranchSt>* heap, std::vector<bool>& checked)
 	{
 		if (result_set.worstDist()<mindistsq) {
 //			printf("Ignoring branch, too far\n");
@@ -600,7 +598,7 @@ private:
 	/**
 	 * Performs an exact search in the tree starting from a node.
 	 */
-	void searchLevelExact(ResultSet& result_set, const ElementType* vec, const NodePtr node, float mindistsq, const float epsError)
+	void searchLevelExact(ResultSet<DistanceType>& result_set, const ElementType* vec, const NodePtr node, float mindistsq, const float epsError)
 	{
 		/* If this is a leaf node, then do check and return. */
 		if (node->child1 == NULL  &&  node->child2 == NULL) {

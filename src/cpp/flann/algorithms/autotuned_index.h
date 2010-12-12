@@ -221,9 +221,9 @@ public:
 	/**
 		Method that searches for nearest-neighbors
 	*/
-	virtual void findNeighbors(ResultSet& result, const ElementType* vec, const SearchParams& searchParams)
+	virtual void findNeighbors(ResultSet<DistanceType>& result, const ElementType* vec, const SearchParams& searchParams)
 	{
-		if (searchParams.checks==-2) {
+		if (searchParams.checks==CHECKS_AUTOTUNED) {
 			bestIndex->findNeighbors(result, vec, bestSearchParams);
 		}
 		else {
@@ -290,8 +290,8 @@ private:
         IndexParams* params;
     };
 
-    typedef pair<CostData, KDTreeIndexParams> KDTreeCostData;
-    typedef pair<CostData, KMeansIndexParams> KMeansCostData;
+    typedef std::pair<CostData, KDTreeIndexParams> KDTreeCostData;
+    typedef std::pair<CostData, KMeansIndexParams> KMeansCostData;
 
 
     void evaluate_kmeans(CostData& cost)
@@ -396,7 +396,7 @@ private:
 
 
 
-    void optimizeKMeans( vector<CostData>& costs )
+    void optimizeKMeans( std::vector<CostData>& costs )
     {
         logger.info("KMEANS, Step 1: Exploring parameter space\n");
 
@@ -445,7 +445,7 @@ private:
     }
 
 
-    void optimizeKDTree(vector<CostData>& costs)
+    void optimizeKDTree( std::vector<CostData>& costs)
     {
 
         logger.info("KD-TREE, Step 1: Exploring parameter space\n");
@@ -492,10 +492,10 @@ private:
     */
     IndexParams* estimateBuildParams()
     {
-        vector<CostData> costs;
+        std::vector<CostData> costs;
 
         int sampleSize = int(index_params.sample_fraction*dataset.rows);
-        int testSampleSize = min(sampleSize/10, 1000);
+        int testSampleSize = std::min(sampleSize/10, 1000);
 
         logger.info("Entering autotuning, dataset size: %d, sampleSize: %d, testSampleSize: %d, target precision: %g\n",dataset.rows, sampleSize, testSampleSize, index_params.target_precision);
 
@@ -556,13 +556,13 @@ private:
         // free all parameter structures, except the one returned
         for (size_t i=0;i<costs.size();++i) {
             if (costs[i].params != bestParams) {
-                free(costs[i].params);
+                delete costs[i].params;
             }
         }
 
         gt_matches.free();
-        sampledDataset.free();
         testDataset.free();
+        sampledDataset.free();
 
         return bestParams;
     }
@@ -583,7 +583,7 @@ private:
 
         float speedup = 0;
 
-        int samples = min(dataset.rows/10, SAMPLE_COUNT);
+        int samples = std::min(dataset.rows/10, SAMPLE_COUNT);
         if (samples>0) {
             Matrix<ElementType> testDataset = random_sample(dataset,samples);
 
@@ -635,6 +635,7 @@ private:
             speedup = linear/searchTime;
 
             gt_matches.free();
+            testDataset.free();
         }
 
         return speedup;

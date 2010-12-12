@@ -31,9 +31,7 @@
 #ifndef HEAP_H
 #define HEAP_H
 
-
 #include <algorithm>
-using namespace std;
 
 namespace flann
 {
@@ -161,12 +159,15 @@ public:
  			return false;
 		}
 
-		/* Switch first node with last. */
-		swap(heap[1],heap[count]);
-
-		count -= 1;
-		heapify(1);      /* Move new node 1 to right position. */
-
+		
+		if (count == 1) {
+			count = 0;    /* For size 1, no need to swap node with itself */
+		} 
+		else {
+			std::swap(heap[1],heap[count]);  /* Switch first node with last. */
+			count -= 1;
+			heapify(1);      /* Move new node 1 to right position. */
+		}
 		value = heap[count + 1];
 		return true;  /* Return old last node. */
 	}
@@ -197,7 +198,7 @@ public:
 
 		/* If a child was smaller, than swap parent with it and Heapify. */
 		if (minloc != parent) {
-			swap(heap[parent],heap[minloc]);
+			std::swap(heap[parent],heap[minloc]);
 			heapify(minloc);
 		}
 	}

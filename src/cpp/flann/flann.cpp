@@ -29,7 +29,6 @@
 // include flann_cpp stuff
 #include "flann_cpp.cpp"
 
-using namespace std;
 
 #ifdef WIN32
 #define EXPORTED extern "C" __declspec(dllexport)
@@ -102,7 +101,7 @@ flann_index_t __flann_build_index(typename Distance::ElementType* dataset, int r
 
 		return index;
 	}
-	catch (runtime_error& e) {
+	catch (std::runtime_error& e) {
 		logger.error("Caught exception: %s\n",e.what());
 		return NULL;
 	}
@@ -176,7 +175,7 @@ int __flann_save_index(flann_index_t index_ptr, char* filename)
 
 		return 0;
 	}
-	catch(runtime_error& e) {
+	catch(std::runtime_error& e) {
 		logger.error("Caught exception: %s\n",e.what());
 		return -1;
 	}
@@ -246,7 +245,7 @@ flann_index_t __flann_load_index(char* filename, typename Distance::ElementType*
 		Index<Distance>* index = new Index<Distance>(Matrix<typename Distance::ElementType>(dataset,rows,cols), SavedIndexParams(filename), d);
 		return index;
 	}
-	catch(runtime_error& e) {
+	catch(std::runtime_error& e) {
 		logger.error("Caught exception: %s\n",e.what());
 		return NULL;
 	}
@@ -327,9 +326,11 @@ int __flann_find_nearest_neighbors(typename Distance::ElementType* dataset,  int
 		index->knnSearch(Matrix<ElementType>(testset, tcount, index->veclen()),
 						m_indices,
 						m_dists, nn, SearchParams(flann_params->checks) );
+		delete index;
+		delete params;
 		return 0;
 	}
-	catch(runtime_error& e) {
+	catch(std::runtime_error& e) {
 		logger.error("Caught exception: %s\n",e.what());
 		return -1;
 	}
@@ -417,7 +418,7 @@ int __flann_find_nearest_neighbors_index(flann_index_t index_ptr, typename Dista
 
         return 0;
 	}
-	catch(runtime_error& e) {
+	catch(std::runtime_error& e) {
 		logger.error("Caught exception: %s\n",e.what());
 		return -1;
 	}
@@ -511,7 +512,7 @@ int __flann_radius_search(flann_index_t index_ptr,
 
 		return count;
 	}
-	catch(runtime_error& e) {
+	catch(std::runtime_error& e) {
 		logger.error("Caught exception: %s\n",e.what());
 		return -1;
 	}
@@ -618,11 +619,13 @@ int __flann_free_index(flann_index_t index_ptr, FLANNParameters* flann_params)
             throw FLANNException("Invalid index");
         }
         Index<Distance>* index = (Index<Distance>*) index_ptr;
+		const IndexParams* index_params = index->getIndexParameters();
         delete index;
+        delete index_params;
 
         return 0;
 	}
-	catch(runtime_error& e) {
+	catch(std::runtime_error& e) {
 		logger.error("Caught exception: %s\n",e.what());
         return -1;
 	}
@@ -700,7 +703,7 @@ int __flann_compute_cluster_centers(typename Distance::ElementType* dataset, int
         int clusterNum = hierarchicalClustering<Distance>(inputData, centers, params, d);
 
 		return clusterNum;
-	} catch (runtime_error& e) {
+	} catch (std::runtime_error& e) {
 		logger.error("Caught exception: %s\n",e.what());
 		return -1;
 	}

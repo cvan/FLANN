@@ -8,7 +8,7 @@ project(flann)
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 
 include(${PROJECT_SOURCE_DIR}/cmake/flann_utils.cmake)
-set(FLANN_VERSION 1.6.2)
+set(FLANN_VERSION 1.6.3)
 DISSECT_VERSION()
 GET_OS_INFO()
 
@@ -101,7 +101,9 @@ endif(USE_MPI)
 include_directories(${PROJECT_SOURCE_DIR}/src/cpp)
 
 # require proper c++
-add_definitions( "-Wall -ansi -pedantic" )
+#add_definitions( "-Wall -ansi -pedantic" )
+# HDF5 uses long long which is not ansi
+add_definitions( "-Wall" )
 
 add_subdirectory( cmake )
 add_subdirectory( src )

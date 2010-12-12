@@ -460,7 +460,7 @@ struct SearchParams
 \begin{description}
  \item[checks] specifies the maximum leafs to visit when searching for neighbours. A
 higher value for this parameter would give better search precision, but
-also take more time. For all leafs to be checked use the value \texttt{CHECKS\_UNLIMITED}.
+also take more time. For all leafs to be checked use value \texttt{CHECKS\_UNLIMITED}.
 If automatic configuration was used when the index was created, the number of checks 
 required to achieve the specified precision was also computed, to use that value specify \texttt{CHECKS\_AUTOTUNED}.
  \item[eps] Search for eps-approximate neighbors (only used by KDTreeSingleIndex).
