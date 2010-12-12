@@ -1,0 +1,100 @@
+--- src/CMakeLists.txt	2010-05-14 11:47:45.000000000 -0700
++++ src/CMakeLists.txt	2010-05-14 11:47:56.000000000 -0700
+@@ -1,4 +1,4 @@
+ 
+ add_subdirectory( cpp )
+-add_subdirectory( matlab )
++#add_subdirectory( matlab )
+ add_subdirectory( python )
+
+--- CMakeLists.txt	2010-05-14 12:22:05.000000000 -0700
++++ CMakeLists.txt	2010-05-14 12:22:09.000000000 -0700
+@@ -100,5 +100,5 @@
+ 
+ 
+ add_subdirectory( src )
+-add_subdirectory( test )
++#add_subdirectory( test )
+ add_subdirectory( doc )
+--- src/cpp/CMakeLists.txt	2010-05-14 00:06:00.000000000 -0700
++++ src/cpp/CMakeLists.txt	2010-08-02 17:13:56.000000000 -0700
+@@ -85,8 +85,47 @@
+ # )
+ 
+ install (
+-    FILES flann.h flann.hpp general.h util/matrix.h util/common.h util/random.h
+-    DESTINATION include
++    FILES flann/general.h flann/flann.h flann/flann.hpp
++    DESTINATION include/flann
++)
++install (
++    FILES 
++      flann/algorithms/dist_extended.h
++      flann/algorithms/kmeans_index.h
++      flann/algorithms/nn_index.h
++      flann/algorithms/all_indices.h
++      flann/algorithms/kdtree_index.h
++      flann/algorithms/dist.h
++      flann/algorithms/linear_index.h
++      flann/algorithms/composite_index.h
++      flann/algorithms/autotuned_index.h
++
++    DESTINATION include/flann/algorithms
++)
++install (
++    FILES flann/io/hdf5.h
++    DESTINATION include/flann/io
++)
++install (
++    FILES
++      flann/util/object_factory.h
++      flann/util/allocator.h
++      flann/util/result_set.h
++      flann/util/heap.h
++      flann/util/saving.h
++      flann/util/timer.h
++      flann/util/matrix.h
++      flann/util/logger.h
++      flann/util/random.h
++      flann/util/sampling.h
++    DESTINATION include/flann/util
++)
++install (
++    FILES
++      flann/nn/index_testing.h
++      flann/nn/simplex_downhill.h
++      flann/nn/ground_truth.h
++    DESTINATION include/flann/nn
+ )
+ 
+ endif(DEFINED OPENCV_VERSION)
+--- src/cpp/CMakeLists.txt	2010-08-02 17:16:02.000000000 -0700
++++ src/cpp/CMakeLists.txt	2010-08-02 17:16:24.000000000 -0700
+@@ -65,10 +65,10 @@
+         RUNTIME DESTINATION python/pyflann/bindings
+     )
+ else(WIN32)
+-    install (
+-        TARGETS flann
+-        LIBRARY DESTINATION python/pyflann/bindings
+-    )
++  #    install (
++  #      TARGETS flann
++  #      LIBRARY DESTINATION python/pyflann/bindings
++  #  )
+ endif(WIN32)
+ 
+ install (
+--- CMakeLists.txt	2010-08-02 17:17:02.000000000 -0700
++++ CMakeLists.txt	2010-08-02 17:18:35.000000000 -0700
+@@ -7,7 +7,7 @@
+ 
+ project(flann)
+ 
+-set(CMAKE_INSTALL_PREFIX /usr/local)
++#set(CMAKE_INSTALL_PREFIX /usr/local)
+ #set the default path for built executables to the "bin" directory
+ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
+ #set the default path for built libraries to the "lib" directory
+
+
