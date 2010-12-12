@@ -34,6 +34,7 @@
 
 #include "flann/algorithms/nn_index.h"
 #include "flann/algorithms/kdtree_index.h"
+#include "flann/algorithms/kdtree_single_index.h"
 #include "flann/algorithms/kmeans_index.h"
 #include "flann/algorithms/composite_index.h"
 #include "flann/algorithms/linear_index.h"
@@ -42,27 +43,30 @@
 
 namespace flann {
 
-template<typename T>
-NNIndex<T>* create_index_by_type(const Matrix<T>& dataset, const IndexParams& params)
+template<typename Distance>
+NNIndex<Distance>* create_index_by_type(const Matrix<typename Distance::ElementType>& dataset, const IndexParams& params, const Distance& distance)
 {
 	flann_algorithm_t index_type = params.getIndexType();
 
-	NNIndex<T>* nnIndex;
+	NNIndex<Distance>* nnIndex;
 	switch (index_type) {
 	case LINEAR:
-		nnIndex = new LinearIndex<T>(dataset, (const LinearIndexParams&)params);
+		nnIndex = new LinearIndex<Distance>(dataset, (const LinearIndexParams&)params, distance);
 		break;
-	case KDTREE:
-		nnIndex = new KDTreeIndex<T>(dataset, (const KDTreeIndexParams&)params);
+	case KDTREE_SINGLE:
+		nnIndex = new KDTreeSingleIndex<Distance>(dataset, (const KDTreeSingleIndexParams&)params, distance);
+	    break;
+    case KDTREE:
+		nnIndex = new KDTreeIndex<Distance>(dataset, (const KDTreeIndexParams&)params, distance);
 		break;
 	case KMEANS:
-		nnIndex = new KMeansIndex<T>(dataset, (const KMeansIndexParams&)params);
+		nnIndex = new KMeansIndex<Distance>(dataset, (const KMeansIndexParams&)params, distance);
 		break;
 	case COMPOSITE:
-		nnIndex = new CompositeIndex<T>(dataset, (const CompositeIndexParams&) params);
+		nnIndex = new CompositeIndex<Distance>(dataset, (const CompositeIndexParams&) params, distance);
 		break;
 	case AUTOTUNED:
-		nnIndex = new AutotunedIndex<T>(dataset, (const AutotunedIndexParams&) params);
+		nnIndex = new AutotunedIndex<Distance>(dataset, (const AutotunedIndexParams&) params, distance);
 		break;
 	default:
 		throw FLANNException("Unknown index type");
